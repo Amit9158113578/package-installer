@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
     tools {
@@ -16,7 +15,7 @@ pipeline {
         }
         stage ("Git Checkout") {
             steps {
-                git 'https://github.com/KastroVKiran/Zomato-Project-Kastro.git'
+                git 'https://github.com/Amit9158113578/DevOps-Project-Zomato-Kastro.git'
             }
         }
         stage("Sonarqube Analysis"){
@@ -40,7 +39,7 @@ pipeline {
             }
         }
         stage('OWASP FS SCAN') {
-            steps {
+           steps {
                 dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit -n', odcInstallation: 'DP-Check'
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
     }
@@ -52,6 +51,10 @@ pipeline {
         }
         stage ("Build Docker Image") {
             steps {
+                sh "docker stop zomato || true"
+                sh "docker rmi zomato:latest || true"
+                sh "docker rmi amit9158/zomato || true"
+                sh "docker system prune -af"
                 sh "docker build -t zomato ."
             }
         }
@@ -65,46 +68,22 @@ pipeline {
                 }
             }
         }
-        stage('Docker Scout Image') {
-            steps {
-                script{
-                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){
-                       sh 'docker-scout quickview amit9158/zomato:latest'
-                       sh 'docker-scout cves amit9158/zomato:latest'
-                       sh 'docker-scout recommendations amit9158/zomato:latest'
-                   }
-                }
-            }
-        }
+        //stage('Docker Scout Image') {
+        //   steps {
+        //        script{
+        //           withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){
+        //               sh 'docker scout quickview amit9158/zomato:latest'
+        //               sh 'docker scout cves amit9158/zomato:latest'
+        //               sh 'docker scout recommendations amit9158/zomato:latest'
+        //           }
+        //        }
+        //    }
+    //    }
         stage ("Deploy to Container") {
             steps {
                 sh 'docker run -d --name zomato -p 3000:3000 amit9158/zomato:latest'
             }
         }
     }
-    //post {
-    //always {
-    //    emailext attachLog: true,
-    //        subject: "'${currentBuild.result}'",
-    //        body: """
-    //            <html>
-    //            <body>
-    //                <div style="background-color: #FFA07A; padding: 10px; margin-bottom: 10px;">
-    //                    <p style="color: white; font-weight: bold;">Project: ${env.JOB_NAME}</p>
-    //                </div>
-    //                <div style="background-color: #90EE90; padding: 10px; margin-bottom: 10px;">
-    //                    <p style="color: white; font-weight: bold;">Build Number: ${env.BUILD_NUMBER}</p>
-    //                </div>
-    //                <div style="background-color: #87CEEB; padding: 10px; margin-bottom: 10px;">
-    //                    <p style="color: white; font-weight: bold;">URL: ${env.BUILD_URL}</p>
-    //                </div>
-    //            </body>
-    //            </html>
-    //        """,
-    //        to: 'kastrokiran@gmail.com',
-    //        mimeType: 'text/html',
-    //        attachmentsPattern: 'trivy.txt'
-    //    }
-   // }
+    
 }
-
